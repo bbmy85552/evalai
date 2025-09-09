@@ -1,16 +1,33 @@
+
+"""
+这是25-08-20更新的新的api使用方法，需要assistant和thread，仅支持gpt4.1
+
+流式输出以及相关变量
+https://platform.openai.com/docs/api-reference/runs/createRun
+
+assistans相关
+https://platform.openai.com/docs/api-reference/assistants/createAssistant
+
+threads相关
+https://platform.openai.com/docs/api-reference/threads/createThread
+
+gpt于2025.08.20更新了API调用方法，旧版不支持assistants与threads：
+https://platform.openai.com/docs/guides/migrate-to-responses?tool-use=chat-completions#about-the-responses-api
+"""
+
+
 from openai import OpenAI
 
-import os
-api_key = os.getenv("OPENAI_API_KEY")
-
-
+# import os
+api_key = "xxx"
 from openai import OpenAI
 import datetime
 
 client = OpenAI(api_key=api_key)
 
-stream = client.responses.create(
+response = client.beta.threads.runs.create(
     model="gpt-5-nano",
+    max_completion_tokens=1000,  # 控制思考token + 回复token总数
     input=[
         {
             "role": "user",
@@ -18,6 +35,9 @@ stream = client.responses.create(
         },
     ],
     stream=True,
+
+    # 该instructions参数为模型提供了生成响应时应如何操作的高级指令，包括语气、目标以及正确响应的示例。任何以这种方式提供的指令都将优先于input参数中的提示。
+    # instructions= "Talk like a pirate.",  
 )
 
 
@@ -25,7 +45,7 @@ stream = client.responses.create(
 final_response = None
 print("模型输出: ", end="", flush=True)
 
-for event in stream:
+for event in response:
     # 检查事件类型是否为文本增量
     if event.type == 'response.output_text.delta':
         # 直接打印出增量内容，不换行
