@@ -152,3 +152,19 @@ if __name__ == "__main__":
         prompt=PROMPT,
         word_limit=WORD_LIMIT
     )
+
+
+
+"""
+(evalai) 2dqy003@2dqy003deMac-mini evalai % python gpt/main.py     
+正在向模型发送请求并等待流式响应...
+模型输出: SSR（Server-Side Rendering，服务器端渲染）是指将网页的初始 HTML 由服务器生成并直接返回给浏览器，而不是在浏览器端通过 JavaScript 逐步渲染。前端领域常见两种渲染模式：CSR（客户端渲染）和 SSR。优点是首屏加载快、对 SEO友好、初始渲染稳定；缺点是服务端压力增大、实现复杂度高、缓存和数据同步需要额外处理。工作流程大致是：浏览器请求页面，服务器根据请求获取数据、渲染成 HTML（可预取数据），发送给浏览器，浏览器接收到后完成客户端的交互逻辑。常用实现方案有 React/Vue 的服务端渲染（如 Next.js、Nuxt.js）以及自定义 SSR。一些场景也会采用混合渲染（同时有 SSR 与 CSR），以兼顾首屏性能和后续交互体验。
+==================================================
+请求完成 ✓
+请求 ID: resp_68c10db4876c819fab479f1a294cc61a0b17e6cab2120add
+创建时间: 2025-09-10 13:33:40
+Token 使用情况:
+  - 输入 Tokens: 21
+  - 输出 Tokens: 223
+  - 总 Tokens: 244
+"""
