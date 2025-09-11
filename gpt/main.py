@@ -8,30 +8,32 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- 配置参数 ---
-PROMPT = "讲一下什么是ssr，前端的"
-WORD_LIMIT = 200  # 字数限制
-MODEL_NAME = "gpt-5-nano"
-ENABLE_REASONING = True  # 是否启用思考
-REASONING_EFFORT = "minimal"  # 思考程度：minimal, medium, high
+prompt = "讲一下什么是ssr，前端的"
+word_limit = 200  # 字数限制
+model_name = "gpt-5-nano"
+enable_reasoning = True  # 是否启用思考
+reasoning_effort = "minimal"  # 思考程度：minimal, medium, high
 
 
 class OpenAIClient:
-    def __init__(self, api_key=None, model=MODEL_NAME, enable_reasoning=ENABLE_REASONING, 
-                 reasoning_effort=REASONING_EFFORT):
+    def __init__(self, api_key=None, model=None, enable_reasoning=None,
+                 reasoning_effort=None):
         """
         初始化OpenAI客户端
-        
+
         Args:
             api_key: OpenAI API密钥，如果为None则从环境变量获取
-            model: 使用的模型名称
-            enable_reasoning: 是否启用推理思考
-            reasoning_effort: 推理思考的程度
+            model: 使用的模型名称，如果为None则使用默认值
+            enable_reasoning: 是否启用推理思考，如果为None则使用默认值
+            reasoning_effort: 推理思考的程度，如果为None则使用默认值
         """
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.client = OpenAI(api_key=self.api_key)
-        self.model = model
-        self.enable_reasoning = enable_reasoning
-        self.reasoning_effort = reasoning_effort
+
+        # 设置默认值
+        self.model = model if model is not None else model_name
+        self.enable_reasoning = enable_reasoning if enable_reasoning is not None else enable_reasoning
+        self.reasoning_effort = reasoning_effort if reasoning_effort is not None else reasoning_effort
     
     def _build_prompt_with_word_limit(self, base_prompt, word_limit):
         """
@@ -46,7 +48,7 @@ class OpenAIClient:
         """
         return f"{base_prompt}，用{word_limit}字完成回复"
     
-    def chat_stream(self, prompt, word_limit=WORD_LIMIT, instructions=None):
+    def chat_stream(self, prompt, word_limit=word_limit, instructions=None):
         """
         发送流式聊天请求
         
@@ -144,13 +146,17 @@ class OpenAIClient:
 
 # --- 使用示例 ---
 if __name__ == "__main__":
-    # 创建客户端实例
-    ai_client = OpenAIClient()
-    
+    # 创建客户端实例（必须传参）
+    ai_client = OpenAIClient(
+        model=model_name,
+        enable_reasoning=enable_reasoning,
+        reasoning_effort=reasoning_effort
+    )
+
     # 发送请求
     response = ai_client.chat_stream(
-        prompt=PROMPT,
-        word_limit=WORD_LIMIT
+        prompt=prompt,
+        word_limit=word_limit
     )
 
 
