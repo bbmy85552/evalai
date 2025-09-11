@@ -1,59 +1,78 @@
 import os
+from typing import Iterator, Dict, Optional
 from openai import OpenAI, APIError
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# 1. 准备工作：初始化客户端
-# 建议通过环境变量配置API Key，避免硬编码。
-# API Key与地域强绑定，请确保base_url与API Key的地域一致。
-try:
-    client = OpenAI(
-        # 若没有配置环境变量，请将下行替换为：api_key="sk-xxx"
-        api_key=os.environ["DASHSCOPE_API_KEY"],
-        # 北京地域: https://dashscope.aliyuncs.com/compatible-mode/v1
-        # 新加坡地域: https://dashscope-intl.aliyuncs.com/compatible-mode/v1
-        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-    )
-except KeyError:
-    raise ValueError("请设置环境变量 DASHSCOPE_API_KEY")
 
-# 2. 发起流式请求
-try:
-    completion = client.chat.completions.create(
-        model="qwen-plus",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": "请介绍一下自己"}
-        ],
-        stream=True,
-        # 目的：在最后一个chunk中获取本次请求的Token用量。
-        stream_options={"include_usage": True}
-    )
+class QwenChatError(Exception):
+    pass
 
-    # 3. 处理流式响应
-    # 使用列表推导式和join()是处理大量文本片段时最高效的方式。
-    content_parts = []
-    print("AI: ", end="", flush=True)
-    
-    for chunk in completion:
-        # 最后一个chunk不包含choices，但包含usage信息。
-        if chunk.choices:
-            # 关键：delta.content可能为None，使用`or ""`避免拼接时出错。
-            content = chunk.choices[0].delta.content or ""
-            print(content, end="", flush=True)
-            content_parts.append(content)
-        elif chunk.usage:
-            # 请求结束，打印Token用量。
-            print("\n--- 请求用量 ---")
-            print(f"输入 Tokens: {chunk.usage.prompt_tokens}")
-            print(f"输出 Tokens: {chunk.usage.completion_tokens}")
-            print(f"总计 Tokens: {chunk.usage.total_tokens}")
 
-    full_response = "".join(content_parts)
-    # print(f"\n--- 完整回复 ---\n{full_response}")
+class QwenStream:
+    """
+    纯流式调用，支持 max_tokens 等全部额外参数
+    """
 
-except APIError as e:
-    print(f"API 请求失败: {e}")
-except Exception as e:
-    print(f"发生未知错误: {e}")
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        model: str = "qwen-plus",
+        system: str = "You are a helpful assistant.",
+    ):
+        api_key = api_key or os.getenv("DASHSCOPE_API_KEY")
+        if not api_key:
+            raise QwenChatError("缺少 DASHSCOPE_API_KEY")
+        base_url = (base_url or "https://dashscope.aliyuncs.com/compatible-mode/v1").rstrip("/")
+        self.client = OpenAI(api_key=api_key, base_url=base_url)
+        self.model = model
+        self.system = system
+
+    def stream(
+        self,
+        prompt: str,
+        max_tokens: Optional[int] = None,
+        **extra,
+    ) -> Iterator[str]:
+        """
+        仅 yield 文本片段；最后 yield 一个 dict 带用量
+        """
+        messages = [
+            {"role": "system", "content": self.system},
+            {"role": "user", "content": prompt},
+        ]
+        try:
+            resp = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                stream=True,
+                stream_options={"include_usage": True},
+                max_tokens=max_tokens,  # 👈 关键参数
+                **extra,
+            )
+            for chunk in resp:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+                elif chunk.usage:
+                    yield {
+                        "prompt_tokens": chunk.usage.prompt_tokens,
+                        "completion_tokens": chunk.usage.completion_tokens,
+                        "total_tokens": chunk.usage.total_tokens,
+                    }
+        except APIError as e:
+            raise QwenChatError(f"API 请求失败: {e}") from e
+
+
+# -------------------- 使用示例 --------------------
+if __name__ == "__main__":
+    bot = QwenStream()
+    usage = None
+    for seg in bot.stream("讲一下什么是Spring Boot", max_tokens=20):  # 限制最多 20 个输出 token
+        if isinstance(seg, dict):
+            usage = seg
+        else:
+            print(seg, end="", flush=True)
+    if usage:
+        print("\n--- 用量 ---", usage)
