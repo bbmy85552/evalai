@@ -7,6 +7,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+import httpx
+
+# 使用代理的 httpx.Client
+http_client_proxy = httpx.Client(proxy="socks5h://localhost:1080")
+
 # --- 配置参数 ---
 prompt = "讲一下什么是ssr，前端的"
 word_limit = 200  # 字数限制
@@ -28,7 +33,9 @@ class OpenAIClient:
             reasoning_effort: 推理思考的程度，如果为None则使用默认值
         """
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        self.client = OpenAI(api_key=self.api_key)
+        self.client = OpenAI(api_key=self.api_key, http_client=http_client_proxy)
+        # self.client = OpenAI(api_key=self.api_key, )
+
 
         # 设置默认值
         self.model = model if model is not None else model_name

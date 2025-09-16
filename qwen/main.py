@@ -7,13 +7,9 @@ load_dotenv()
 
 # --- 配置参数 ---
 prompt = "讲一下什么是Spring Boot"
-max_tokens = 20  # 通过提示词限制输出token数
+max_tokens = 200  # 通过提示词限制输出token数
 model_name = "qwen-plus"
 system_message = "You are a helpful assistant."
-
-
-class QwenChatError(Exception):
-    pass
 
 
 class QwenStream:
