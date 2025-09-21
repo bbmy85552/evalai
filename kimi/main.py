@@ -7,7 +7,7 @@ load_dotenv()
 
 # -------------------- 配置区 --------------------
 prompt = "讲一下什么是 Spring Boot"
-max_tokens = 200                        # 通过提示词限制输出长度
+max_tokens = 20                       # 通过提示词限制输出长度
 model_name = "kimi-k2-0905-preview"    # Kimi 流式预览模型
 system_message = "You are a helpful assistant."
 # ----------------------------------------------
@@ -117,3 +117,14 @@ class KimiStream:
 if __name__ == "__main__":
     bot = KimiStream(model=model_name, system=system_message)
     bot.chat_stream(prompt=prompt, max_tokens=max_tokens)
+
+'''
+    正在向 Kimi 发送流式请求...
+模型输出: Spring Boot 是快速构建独立运行 Spring 应用的框架，自动配置，内嵌服务器，零 XML，开箱即用。
+==================================================
+请求完成 ✓
+Token 使用情况:
+  - 输入 Tokens: 28
+  - 输出 Tokens: 27
+  - 总 Tokens: 55
+  '''
